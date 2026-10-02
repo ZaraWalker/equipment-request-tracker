@@ -41,6 +41,7 @@ test("createRequest trims input and adds system fields", () => {
     requester: "Jordan Lee",
     department: "Operations",
     equipment: "Laptop",
+    priority: "Normal",
     neededBy: "2026-09-15",
     reason: "Replace a failed field computer.",
     createdAt: "2026-08-17T12:00:00.000Z",
@@ -83,4 +84,47 @@ test("loadRequests safely handles damaged stored data", () => {
   storage.setItem(STORAGE_KEY, "not-json");
 
   assert.deepEqual(loadRequests(storage), []);
+});
+
+test("createRequest preserves each supported priority", () => {
+  for (const priority of ["Low", "Normal", "High"]) {
+    assert.equal(createRequest({ ...validInput, priority }).priority, priority);
+  }
+});
+
+test("createRequest rejects unsupported priorities", () => {
+  for (const priority of ["Urgent", "", null]) {
+    assert.throws(
+      () => createRequest({ ...validInput, priority }),
+      (error) => {
+        assert.ok(error instanceof RequestValidationError);
+        assert.deepEqual(Object.keys(error.errors), ["priority"]);
+        return true;
+      },
+    );
+  }
+});
+
+test("stored priorities survive saving and reloading", () => {
+  const storage = new MemoryStorage();
+  const requests = ["Low", "Normal", "High"].map((priority) =>
+    createRequest({ ...validInput, priority }),
+  );
+  saveRequests(requests, storage);
+  assert.deepEqual(loadRequests(storage), requests);
+});
+
+test("older requests without priority remain intact and default to Normal", () => {
+  const storage = new MemoryStorage();
+  const legacy = createRequest(validInput, {
+    id: "legacy",
+    now: new Date("2026-08-17T12:00:00.000Z"),
+  });
+  delete legacy.priority;
+  storage.setItem(STORAGE_KEY, JSON.stringify([legacy]));
+
+  const loaded = loadRequests(storage);
+  assert.deepEqual(loaded, [{ ...legacy, priority: "Normal" }]);
+  saveRequests(loaded, storage);
+  assert.deepEqual(loadRequests(storage), loaded);
 });
