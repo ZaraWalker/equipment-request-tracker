@@ -1,4 +1,6 @@
 export const STORAGE_KEY = "mis4173-equipment-requests";
+export const PRIORITIES = ["High", "Normal", "Low"];
+export const STATUSES = ["Pending", "Completed"];
 
 export class RequestValidationError extends Error {
   constructor(errors) {
@@ -47,6 +49,7 @@ export function createRequest(input, options = {}) {
     department: clean(input.department),
     equipment: clean(input.equipment),
     priority: input.priority ?? "Normal",
+    status: "Pending",
     neededBy: clean(input.neededBy),
     reason: clean(input.reason),
     createdAt: now.toISOString(),
@@ -58,41 +61,63 @@ export function appendRequest(requests, request) {
 }
 
 export function loadRequests(storage = globalThis.localStorage) {
-  if (!storage) return [];
-
-  try {
-    const stored = storage.getItem(STORAGE_KEY);
-    if (!stored) return [];
-
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed)
-      ? parsed.filter(isRequestRecord).map((request) => ({
-          ...request,
-          priority: ["Low", "Normal", "High"].includes(request.priority)
-            ? request.priority
-            : "Normal",
-        }))
-      : [];
-  } catch {
-    return [];
+  if (!storage) throw new Error("Browser storage is unavailable.");
+  const stored = storage.getItem(STORAGE_KEY);
+  if (!stored) return [];
+  const parsed = JSON.parse(stored);
+  // Refuse to overwrite unreadable data; never silently discard records.
+  if (!Array.isArray(parsed) || parsed.some((value) => !value || typeof value !== "object" || Array.isArray(value))) {
+    throw new Error("Stored requests could not be read.");
   }
+  return parsed.map((request) => ({
+    ...request,
+    status: STATUSES.includes(request.status) ? request.status : "Pending",
+  }));
 }
 
 export function saveRequests(requests, storage = globalThis.localStorage) {
-  if (!storage) return;
+  if (!storage) throw new Error("Browser storage is unavailable.");
   storage.setItem(STORAGE_KEY, JSON.stringify(requests));
 }
 
-function isRequestRecord(value) {
-  return (
-    value &&
-    typeof value === "object" &&
-    typeof value.id === "string" &&
-    typeof value.requester === "string" &&
-    typeof value.department === "string" &&
-    typeof value.equipment === "string" &&
-    typeof value.neededBy === "string" &&
-    typeof value.reason === "string" &&
-    typeof value.createdAt === "string"
-  );
+export function validRequestDate(value) {
+  return typeof value === "string" && value.trim() !== "" && Number.isFinite(Date.parse(value));
+}
+
+export function needsReview(request) {
+  return !PRIORITIES.includes(request.priority) || !validRequestDate(request.createdAt);
+}
+
+export function requestView(requests, priority = "All Priorities") {
+  const review = requests.filter(needsReview);
+  const eligible = requests.filter((request) => !needsReview(request) &&
+    (priority === "All Priorities" || request.priority === priority));
+  const sorted = eligible.toSorted((a, b) =>
+    Date.parse(b.createdAt) - Date.parse(a.createdAt) ||
+    PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority));
+  return {
+    pending: sorted.filter((request) => request.status !== "Completed"),
+    completed: sorted.filter((request) => request.status === "Completed"),
+    review,
+  };
+}
+
+// Use the list index so even legacy records with missing/duplicate IDs stay distinct.
+// Persist the candidate before returning it; callers keep their old state on failure.
+export function saveManagerUpdate(requests, index, changes, storage = globalThis.localStorage) {
+  if (!requests[index]) throw new Error("Request not found.");
+  const fields = Object.keys(changes);
+  const statusUpdate = fields.length === 1 && fields[0] === "status";
+  if (statusUpdate) {
+    if (!STATUSES.includes(changes.status)) throw new Error("Select Pending or Completed.");
+  } else {
+    if (!fields.length || fields.some((field) => !["priority", "createdAt"].includes(field))) {
+      throw new Error("Only priority and request date can be corrected.");
+    }
+    const corrected = { ...requests[index], ...changes };
+    if (needsReview(corrected)) throw new Error("Assign a valid priority and request date before approval.");
+  }
+  const updated = requests.map((request, position) => position === index ? { ...request, ...changes } : request);
+  saveRequests(updated, storage);
+  return updated;
 }

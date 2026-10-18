@@ -103,28 +103,18 @@
           <p id="request-count" class="request-count">0 requests</p>
         </div>
 
-        <div id="empty-state" class="empty-state">
-          <h3>No requests yet</h3>
-          <p>Add the first equipment request using the form.</p>
+        <div class="field">
+          <label for="priority-filter">Filter by priority</label>
+          <select id="priority-filter" autocomplete="off">
+            <option>All Priorities</option>
+            <option>High</option>
+            <option>Normal</option>
+            <option>Low</option>
+          </select>
         </div>
-
-        <div id="request-table-wrapper" class="table-wrapper" hidden>
-          <table>
-            <caption class="sr-only">Submitted equipment requests</caption>
-            <thead>
-              <tr>
-                <th scope="col">Requester</th>
-                <th scope="col">Department</th>
-                <th scope="col">Equipment</th>
-                <th scope="col">Priority</th>
-                <th scope="col">Needed by</th>
-                <th scope="col">Business reason</th>
-                <th scope="col">Submitted</th>
-              </tr>
-            </thead>
-            <tbody id="request-table-body"></tbody>
-          </table>
-        </div>
+        <p id="manager-message" class="form-message" role="status" aria-live="polite"></p>
+        <p id="empty-state" class="empty-state" role="status" hidden>No Requests Match Your Search.</p>
+        <div id="request-sections"></div>
       </section>
     </main>
 
