@@ -231,6 +231,25 @@ button:hover {
   overflow-x: auto;
 }
 
+.table-wrapper:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.request-section {
+  margin-top: 1.5rem;
+}
+
+.manager-editor {
+  min-width: 12rem;
+  margin-bottom: 1rem;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
