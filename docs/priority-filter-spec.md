@@ -92,6 +92,32 @@ Managers need to see all eligible requests by default and narrow the list to Hig
 16. **Failed status save:** When a status save fails, the request retains its previously saved status and section and a clear failure indication appears. Refresh does not show the failed status change as saved.
 17. **Status section visibility:** With only Pending requests, only Completed requests, or no eligible requests, both regular status sections remain visible in the correct order on initial load, after refresh, and under every priority filter.
 
+## Verification Results
+
+All 17 acceptance criteria passed verification of implementation commit `76a519b`. Evidence includes 16 passing Node tests and Microsoft Edge browser checks, including keyboard operation and simulated save failures. Measured refresh time was 180 ms with 12 fixture requests on the test device.
+
+| Criterion | Result |
+| --- | --- |
+| 1. Initial display | Pass |
+| 2. Priority filtering | Pass |
+| 3. Date and priority ties | Pass |
+| 4. Refresh | Pass |
+| 5. Review classification | Pass |
+| 6. Successful correction | Pass |
+| 7. Incomplete correction | Pass |
+| 8. Persistence | Pass |
+| 9. Failed correction save | Pass |
+| 10. Empty results | Pass |
+| 11. Data preservation | Pass |
+| 12. No authentication or database | Pass |
+| 13. Accessibility | Pass |
+| 14. Status assignment and display | Pass |
+| 15. Completion and reopening | Pass |
+| 16. Failed status save | Pass |
+| 17. Status section visibility | Pass |
+
+See [Priority filter verification](priority-filter-testing.md) for each criterion's test procedure, expected result, environment, and limits.
+
 ## Out of Scope
 
 - Implementing the feature as part of this specification-writing task.
