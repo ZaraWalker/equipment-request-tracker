@@ -60,6 +60,11 @@ export function appendRequest(requests, request) {
   return [request, ...requests];
 }
 
+function normalizeStatus(status) {
+  // Intentional legacy-data conversion: missing and unrecognized statuses become Pending.
+  return STATUSES.includes(status) ? status : "Pending";
+}
+
 export function loadRequests(storage = globalThis.localStorage) {
   if (!storage) throw new Error("Browser storage is unavailable.");
   const stored = storage.getItem(STORAGE_KEY);
@@ -71,7 +76,7 @@ export function loadRequests(storage = globalThis.localStorage) {
   }
   return parsed.map((request) => ({
     ...request,
-    status: STATUSES.includes(request.status) ? request.status : "Pending",
+    status: normalizeStatus(request.status),
   }));
 }
 
