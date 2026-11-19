@@ -222,14 +222,39 @@ test("failed saves leave original data and sections intact (AC 9, 16)", () => {
   assert.throws(() => saveRequests([], null), /unavailable/);
 });
 
-test("legacy status defaults to Pending without writing or changing priority/date (AC 14)", () => {
+test("missing and invalid statuses intentionally default to Pending without changing other data (AC 11, 14)", () => {
   const storage = new MemoryStorage();
-  const legacy = record("legacy");
-  delete legacy.status;
-  saveRequests([legacy], storage);
+  const actionable = record("actionable");
+  const missing = record("legacy-missing");
+  delete missing.status;
+  missing.extra = { keep: "missing-status data" };
+  const invalid = record("legacy-invalid");
+  invalid.status = "Blocked";
+  invalid.extra = { keep: "invalid-status data" };
+  const completed = record("completed", "Low", "2026-10-17T12:00:00Z", "Completed");
+  saveRequests([actionable, missing, invalid, completed], storage);
+
   const raw = storage.getItem(STORAGE_KEY);
-  assert.deepEqual(loadRequests(storage), [{ ...legacy, status: "Pending" }]);
+  const loaded = loadRequests(storage);
+  const normalized = [
+    actionable,
+    { ...missing, status: "Pending" },
+    { ...invalid, status: "Pending" },
+    completed,
+  ];
+  assert.deepEqual(loaded, normalized);
   assert.equal(storage.getItem(STORAGE_KEY), raw);
+
+  // A successful explicit manager save persists the intentional status normalization
+  // while preserving every non-status field on the converted legacy requests.
+  const updated = saveManagerUpdate(loaded, 0, { status: "Completed" }, storage);
+  assert.deepEqual(updated, [
+    { ...actionable, status: "Completed" },
+    { ...missing, status: "Pending" },
+    { ...invalid, status: "Pending" },
+    completed,
+  ]);
+  assert.deepEqual(loadRequests(storage), updated);
 });
 
 test("empty, pending-only, and completed-only views retain both status lists (AC 10, 17)", () => {
