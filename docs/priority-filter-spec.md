@@ -51,7 +51,7 @@ Managers need to see all eligible requests by default and narrow the list to Hig
 7. **Request status and manager updates**
    - Status is a separate field displayed after the request's priority. Every request, whether High, Normal, or Low, has either Pending or Completed status.
    - Pending means the request has not been completed. Completed means the request has been fulfilled.
-   - The system automatically assigns Pending to new requests. Existing requests without a status default to Pending.
+   - The system automatically assigns Pending to new requests. Existing requests whose status is missing or is not exactly Pending or Completed default to Pending when loaded. This is an intentional status data conversion; preserve every other request field. Loading and filtering do not write to storage solely to perform this conversion, but a subsequent successful save persists the normalized status.
    - Requesters cannot set or change status. Only Pending and Completed are permitted and displayed; status controls must not allow another value.
    - Managers can mark a fulfilled request Completed or reopen it as Pending if the requester has not been satisfied.
    - Use an explicit manager update-and-save process similar to priority and date corrections. Status describes work progress, independently of approval.
@@ -67,7 +67,7 @@ Managers need to see all eligible requests by default and narrow the list to Hig
 - Work without a login, database, external service, framework, or new production dependency.
 - Use the existing browser-local storage approach for saved priority/date corrections and status changes.
 - Preserve every existing request, including requests requiring review. Do not delete, drop, or silently overwrite request data during loading, filtering, ordering, or saving.
-- Viewing, filtering, and ordering must not modify stored requests. Defaulting a legacy request with no status to Pending is system initialization, not a filter side effect.
+- Viewing, filtering, and ordering must not modify stored requests. Defaulting a legacy request whose status is missing or not exactly Pending or Completed to Pending is an intentional system initialization conversion, not a filter side effect. This conversion may change only the status field; preserve every other field. Do not write to storage solely because a request was loaded or viewed; a subsequent successful save may persist the normalized status.
 - Manager approval and status updates are manager workflows without authenticated role enforcement. Keep status editing out of the requester workflow.
 - Keep controls keyboard accessible, with visible labels and focus indicators.
 - This specification defines future behavior only; creating it does not implement the feature.
@@ -84,10 +84,10 @@ Managers need to see all eligible requests by default and narrow the list to Hig
 8. **Persistence:** Refreshing in the same browser on the same device retains saved priority/date corrections and status changes while resetting the filter to All Priorities.
 9. **Failed correction save:** A failed priority/date correction save leaves the request in its original section with its previously saved values and shows a clear failure indication.
 10. **Empty results:** A selection with no eligible matches across both status sections shows exactly No Requests Match Your Search. Both status sections remain displayed, and the review section remains accessible if it contains requests.
-11. **Data preservation:** Comparing requests before and after changing filters, sorting, and refreshing shows no lost requests or unintended data changes. Successful manager saves alter only the intended priority/date or status fields. Legacy requests without status receive the specified Pending default without changing other fields.
+11. **Data preservation:** Comparing requests before and after changing filters, sorting, and refreshing shows no lost requests or unintended data changes. Successful manager saves alter only the intended priority/date or status fields, except that loaded missing or invalid statuses may be normalized to Pending as specified. Status normalization changes no other fields. Legacy requests with missing or invalid status receive this Pending default.
 12. **No authentication or database:** Filtering, review, approval, status updates, and persistence work using the existing browser-local application without a login or database.
 13. **Accessibility:** Managers can operate the filter, review/save, and status controls with a keyboard and identify controls and keyboard focus visually.
-14. **Status assignment and display:** A new request automatically receives Pending without requester input. An existing request without status defaults to Pending. Each displayed request shows its status after its priority; only Pending and Completed are permitted, and requesters have no status-editing controls.
+14. **Status assignment and display:** A new request automatically receives Pending without requester input. An existing request with a missing or invalid status defaults to Pending. Each displayed request shows its status after its priority; only Pending and Completed are permitted, and requesters have no status-editing controls.
 15. **Completion and reopening:** A manager marks an eligible Pending request Completed and saves; it moves to Completed. Reopening it as Pending and saving moves it back to Pending. Each move follows the section ordering rules and leaves the current priority filter unchanged.
 16. **Failed status save:** When a status save fails, the request retains its previously saved status and section and a clear failure indication appears. Refresh does not show the failed status change as saved.
 17. **Status section visibility:** With only Pending requests, only Completed requests, or no eligible requests, both regular status sections remain visible in the correct order on initial load, after refresh, and under every priority filter.
